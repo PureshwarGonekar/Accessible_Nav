@@ -3,60 +3,43 @@ import { Accessibility, Activity, Zap, Volume2, Eye, Vibrate } from "lucide-reac
 
 import api from '../api';
 
+import MobilityProfileSelector from './MobilityProfileSelector';
+
 const ProfileSetup = ({ onComplete, savedProfile }) => {
   const [preferences, setPreferences] = React.useState({
-    wheelchair: false,
-    walker: false,
-    fatigue: false,
-    avoidCrowds: false,
-    avoidSlopes: false,
-    guidance: "visual", // 'audio', 'haptic', 'visual'
+    guidance: "visual",
   });
+  const [activeProfile, setActiveProfile] = React.useState(null);
 
   React.useEffect(() => {
-    if (savedProfile && savedProfile.mobility_type) {
-      // Database uses snake_case JSON or similar, let's parse safely
-      // Note: Backend might send mobility_type as JSON object or array. 
-      // Our controller saved it as JSON array of strings ["Wheelchair", ...] 
-      // Wait, let's strict check how controller saves it.
-      // Controller: JSON.stringify(mobility_type) where mobility_type is passed from body.
-      // So if we pass array, it saves array.
-      // Frontend state 'preferences' is object with booleans.
-      // We should map back and forth or change backend to store object.
-      // Let's map to array for backend to match controller comment: ["Wheelchair", "Fatigue"]
-      // But for now, let's just assume we send the Preferences Object directly as JSON?
-      // Controller: mobility_type = $1. If we send object, it saves object.
-      // Let's send the preferences object directly, it's easier.
-      // But verify if `mobility_type` column is JSONB. Yes it is.
-      
-      const mobility = typeof savedProfile.mobility_type === 'string' 
-          ? JSON.parse(savedProfile.mobility_type) 
-          : savedProfile.mobility_type;
-
-      if (mobility) {
-        setPreferences(prev => ({ ...prev, ...mobility }));
+    if (savedProfile) {
+      if (savedProfile.mobility_profile) {
+        setActiveProfile(savedProfile.mobility_profile);
+      }
+      if (savedProfile.guidance_preference) {
+        setPreferences(prev => ({ ...prev, guidance: savedProfile.guidance_preference }));
       }
     }
-     // Also check guidance_preference
-     if (savedProfile && savedProfile.guidance_preference) {
-        setPreferences(prev => ({ ...prev, guidance: savedProfile.guidance_preference }));
-     }
   }, [savedProfile]);
 
-  const togglePreference = (key) => {
-    setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleProfileSelect = (profileId) => {
+    setActiveProfile(profileId);
   };
 
   const handleSubmit = async () => {
     try {
-        await api.put('/profile', {
-            mobility_type: preferences, // Saving the whole object
-            guidance_preference: preferences.guidance
-        });
-        onComplete(preferences);
+      if (!activeProfile) {
+        alert('Please select a mobility profile.');
+        return;
+      }
+      await api.put('/profile', {
+        mobility_profile: activeProfile,
+        guidance_preference: preferences.guidance
+      });
+      onComplete({ mobility_profile: activeProfile, ...preferences });
     } catch (err) {
-        console.error('Failed to save profile', err);
-        alert('Failed to save profile. Please try again.');
+      console.error('Failed to save profile', err);
+      alert('Failed to save profile. Please try again.');
     }
   };
 
@@ -69,60 +52,10 @@ const ProfileSetup = ({ onComplete, savedProfile }) => {
         Tell us about your needs so we can find the safest route for you.
       </p>
 
-      <div className="input-group">
-        <label
-          className={`mobility-option ${
-            preferences.wheelchair ? "selected" : ""
-          }`}
-          onClick={() => togglePreference("wheelchair")}
-        >
-          <div className="icon-wrapper">
-            <Accessibility size={24} />
-          </div>
-          <div>
-            <strong>Wheelchair User</strong>
-            <div
-              style={{ fontSize: "0.85rem", color: "hsl(var(--text-muted))" }}
-            >
-              Avoids stairs & narrow paths
-            </div>
-          </div>
-        </label>
-
-        <label
-          className={`mobility-option ${preferences.walker ? "selected" : ""}`}
-          onClick={() => togglePreference("walker")}
-        >
-          <div className="icon-wrapper">
-            <Activity size={24} />
-          </div>
-          <div>
-            <strong>Walker / Crutches</strong>
-            <div
-              style={{ fontSize: "0.85rem", color: "hsl(var(--text-muted))" }}
-            >
-              Needs smooth surfaces
-            </div>
-          </div>
-        </label>
-
-        <label
-          className={`mobility-option ${preferences.fatigue ? "selected" : ""}`}
-          onClick={() => togglePreference("fatigue")}
-        >
-          <div className="icon-wrapper">
-            <Zap size={24} />
-          </div>
-          <div>
-            <strong>Fatigue Sensitive</strong>
-            <div
-              style={{ fontSize: "0.85rem", color: "hsl(var(--text-muted))" }}
-            >
-              Shortest distance priority
-            </div>
-          </div>
-        </label>
-      </div>
+      <MobilityProfileSelector
+        selectedProfile={activeProfile}
+        onSelect={handleProfileSelect}
+      />
 
       <h3 style={{ marginBottom: "16px", marginTop: "24px" }}>
         Preferred Guidance

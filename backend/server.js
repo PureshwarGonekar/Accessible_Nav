@@ -23,6 +23,7 @@ app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/routes', require('./routes/routeRoutes'));
 app.use('/api/alerts', require('./routes/alertsRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/navigation', require('./routes/navigationRoutes'));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

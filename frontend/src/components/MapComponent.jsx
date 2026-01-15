@@ -5,13 +5,44 @@ import L from 'leaflet';
 import crowdIconImg from '../assets/icons/avoid-crowds.png';
 import constructionIconImg from '../assets/icons/under-construction.png';
 import warningIconImg from '../assets/icons/warning.png';
+import greenMarker from '../assets/icons/green_marker.png'; // Assuming this exists for start
+import redMarker from '../assets/icons/red_marker.png';     // Assuming this exists for end
+import stopMarker from '../assets/icons/stop_marker.png';
 
 // Fix for default Leaflet markers in React
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+// Custom Icons
+const StartIcon = new L.Icon({
+  iconUrl: greenMarker,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
+});
+
+const EndIcon = new L.Icon({
+  iconUrl: redMarker,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
+});
+
+const StopIcon = new L.Icon({
+  iconUrl: stopMarker,
+  iconSize: [35, 35], // Slightly smaller than start/end
+  iconAnchor: [17, 35],
+  popupAnchor: [0, -35],
+});
+
+const UserIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1077/1077114.png',
+  iconSize: [20, 20],
+  className: 'user-location-pulse'
 });
 
 // Helper component to update map view when props change
@@ -33,10 +64,12 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = [], routeGeometry, startName, endName }) => {
+const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = [], routeGeometry, startName, endName, stops = [] }) => {
+  // Center of India (fallback)
   // Center of India (fallback)
   const baseLat = 20.5937;
   const baseLng = 78.9629;
+  const mapRef = useRef(null);
 
   const getLatLng = (loc) => {
     if (!loc) return null;
@@ -65,6 +98,9 @@ const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = 
       case 'Crowd': iconUrl = crowdIconImg; break;
       case 'Construction': iconUrl = constructionIconImg; break;
       case 'Obstacle': iconUrl = warningIconImg; break;
+      case 'Slope': iconUrl = warningIconImg; break;
+      case 'Rest': return new L.Icon.Default(); // Use default blue pin for rest spots
+      case 'Info': return new L.Icon.Default();
       default: iconUrl = warningIconImg;
     }
 
@@ -76,22 +112,70 @@ const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = 
     });
   };
 
+  // Fit bounds if coords change
+  useEffect(() => {
+    if (mapRef.current && (startCoords || endCoords || (stops && stops.length > 0))) {
+      const bounds = L.latLngBounds();
+      if (startCoords) bounds.extend([startCoords.lat, startCoords.lng]);
+      if (endCoords) bounds.extend([endCoords.lat, endCoords.lng]);
+
+      // Include stops in bounds
+      if (stops && stops.length > 0) {
+        stops.forEach(s => {
+          if (s.lat && s.lng) bounds.extend([s.lat, s.lng]);
+        });
+      }
+
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+  }, [startCoords, endCoords, stops, routeGeometry]);
+
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative', zIndex: 0 }}>
-      <MapContainer center={startPos} zoom={13} style={{ height: '100%', width: '100%' }}>
-        <ChangeView center={startPos} zoom={endPos ? 13 : 15} />
+      <MapContainer
+        center={startCoords ? [startCoords.lat, startCoords.lng] : [baseLat, baseLng]}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+        ref={mapRef}
+        zoomControl={false}
+      >
+        {/* <ChangeView center={startPos} zoom={endPos ? 13 : 15} /> */} {/* ChangeView is replaced by useEffect for fitBounds */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
-        <Marker position={startPos}>
-          <Popup>{startName || 'Start Location'}</Popup>
-        </Marker>
+        {/* Zoom Control */}
+        <ZoomControl position="bottomright" />
 
-        {endPos && (
-          <Marker position={endPos}>
-            <Popup>{endName || 'Destination'}</Popup>
+        {/* Start Marker */}
+        {startCoords && (
+          <Marker position={[startCoords.lat, startCoords.lng]} icon={StartIcon}>
+            <Popup className="custom-popup">
+              <strong>Start</strong><br />{startName || "Origin"}
+            </Popup>
+          </Marker>
+        )}
+
+        {/* Stop Markers */}
+        {stops && stops.map((stop, i) => (
+          stop.lat && stop.lng ? (
+            <Marker key={i} position={[stop.lat, stop.lng]} icon={StopIcon}>
+              <Popup className="custom-popup">
+                <strong>Stop {i + 1}</strong>
+              </Popup>
+            </Marker>
+          ) : null
+        ))}
+
+        {/* End Marker */}
+        {endCoords && (
+          <Marker position={[endCoords.lat, endCoords.lng]} icon={EndIcon}>
+            <Popup className="custom-popup">
+              <strong>Destination</strong><br />{endName || "Destination"}
+            </Popup>
           </Marker>
         )}
 

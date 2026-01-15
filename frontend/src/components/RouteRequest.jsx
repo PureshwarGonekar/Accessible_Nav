@@ -18,6 +18,8 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
 
   const [destSuggestions, setDestSuggestions] = useState([]);
   const [startSuggestions, setStartSuggestions] = useState([]);
+
+  const [stopSuggestions, setStopSuggestions] = useState([]);
   const [activeSuggestionField, setActiveSuggestionField] = useState(null); // 'start', 'dest', or 'stop-Index'
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
 
@@ -26,7 +28,7 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
     const timer = setTimeout(() => {
       if (activeSuggestionField === 'dest' && dest && dest.length > 2) {
         setIsFetchingSuggestions(true);
-        // Bias by start location if available, otherwise nothing (or could bias by current location if we stored it separately)
+        // Bias by start location if available
         const biasLat = startCoords ? startCoords.lat : null;
         const biasLng = startCoords ? startCoords.lng : null;
 
@@ -36,15 +38,28 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
         });
       } else if (activeSuggestionField === 'start' && start && start !== 'Current Location' && start.length > 2) {
         setIsFetchingSuggestions(true);
-        // Bias by initial user position if available
         searchAddress(start, initialUserPos?.lat, initialUserPos?.lng).then(results => {
           setStartSuggestions(results);
           setIsFetchingSuggestions(false);
         });
+      } else if (activeSuggestionField && activeSuggestionField.startsWith('stop-')) {
+        const index = parseInt(activeSuggestionField.split('-')[1]);
+        const stopValue = stops[index]?.value;
+
+        if (stopValue && stopValue.length > 2) {
+          setIsFetchingSuggestions(true);
+          // Bias by previous stop or start
+          const prev = index > 0 ? stops[index - 1].coords : startCoords;
+
+          searchAddress(stopValue, prev?.lat, prev?.lng).then(results => {
+            setStopSuggestions(results);
+            setIsFetchingSuggestions(false);
+          });
+        }
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [dest, start, activeSuggestionField]);
+  }, [dest, start, stops, activeSuggestionField]);
 
   // Initial Location
   useEffect(() => {
@@ -64,15 +79,22 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
     if (!dest) return;
 
     setIsSearching(true);
-    // Pass coordinates if we have them, otherwise just strings and let Map component (or backend) resolve them?
-    // Better to ensure we have coords. If not, trigger a search for the best match.
-    // For now, let's assume user picked from dropdown or we just pass available data.
-
     onSearch({
       start,
       startCoords,
       dest,
       destCoords,
+      // Pass full stop objects if possible, or just values. 
+      // Current onSearch expects mapped strings? 
+      // Let's pass the array of objects {value, coords} so RouteView doesn't have to re-geocode if we already found them!
+      // But RouteView logic currently expects strings and does geocoding. 
+      // Let's pass strings for compatibility OR update RouteView.
+      // RouteView currently does: for (const stopName of request.stops) ... searchAddress(stopName).
+      // If we pass coords, we can skip that.
+      // Let's update onSearch to pass simple structure but include coords if we have them.
+      // Actually, maintaining current contract (strings) is safer for now unless we refactor RouteView significantly.
+      // We will rely on RouteView to geocode for verification, OR we can pass coords if we have them.
+      // Let's stick to existing contract: stops: stops.map(s => s.value)
       stops: stops.map(s => s.value)
     });
     setIsSearching(false);
@@ -89,13 +111,20 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
 
   const handleSelectSuggestion = (field, item) => {
     if (field === 'dest') {
-      setDest(item.display_name); // Or item.main_text + ", " + item.secondary_text
+      setDest(item.display_name);
       setDestCoords({ lat: item.lat, lng: item.lng });
       setDestSuggestions([]);
     } else if (field === 'start') {
       setStart(item.display_name);
       setStartCoords({ lat: item.lat, lng: item.lng });
       setStartSuggestions([]);
+    } else if (field.startsWith('stop-')) {
+      const index = parseInt(field.split('-')[1]);
+      const newStops = [...stops];
+      newStops[index].value = item.display_name;
+      newStops[index].coords = { lat: item.lat, lng: item.lng };
+      setStops(newStops);
+      setStopSuggestions([]);
     }
     setActiveSuggestionField(null);
   };
@@ -179,7 +208,7 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
         </div>
 
         {/* Flip Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px', marginRight: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', marginRight: '8px' }}>
           <button
             type="button"
             onClick={handleFlip}
@@ -190,6 +219,81 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
             }}
           >
             <ArrowUpDown size={16} />
+          </button>
+        </div>
+
+        {/* Stops */}
+        {stops.map((stop, index) => (
+          <div key={index} className="input-group" style={{ marginBottom: '12px', position: 'relative' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div style={{ position: 'absolute', left: '20px', width: '6px', height: '6px', borderRadius: '50%', background: 'hsl(var(--text-muted))' }}></div>
+              <input
+                type="text"
+                className="input-field"
+                placeholder={`Stop ${index + 1}`}
+                value={stop.value}
+                onChange={(e) => {
+                  const newStops = [...stops];
+                  newStops[index].value = e.target.value;
+                  setStops(newStops);
+                  setActiveSuggestionField(`stop-${index}`);
+                }}
+                onFocus={() => setActiveSuggestionField(`stop-${index}`)}
+                style={{ paddingLeft: '48px', flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const newStops = stops.filter((_, i) => i !== index);
+                  setStops(newStops);
+                }}
+                style={{ background: 'none', border: 'none', color: 'hsl(var(--text-muted))', cursor: 'pointer', padding: '0 8px' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Stop Suggestions */}
+            {activeSuggestionField === `stop-${index}` && (stopSuggestions.length > 0 || isFetchingSuggestions) && (
+              <div className="suggestions-dropdown" style={{
+                position: 'absolute', top: '100%', left: 0, right: 0,
+                background: 'hsl(var(--bg-card))', border: '1px solid rgba(255,255,255,0.1)',
+                zIndex: 20, borderRadius: '8px', overflow: 'hidden',
+                marginTop: '4px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+              }}>
+                {isFetchingSuggestions && (
+                  <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
+                    <Loader className="spin" size={16} /> Loading...
+                  </div>
+                )}
+                {!isFetchingSuggestions && stopSuggestions.length === 0 && stop.value.length > 2 && (
+                  <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>No location found</div>
+                )}
+                {!isFetchingSuggestions && stopSuggestions.map((item, i) => (
+                  <div key={i} onClick={() => handleSelectSuggestion(`stop-${index}`, item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ fontWeight: '500', color: 'hsl(var(--text-primary))' }}>{item.main_text}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
+                      {item.secondary_text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Add Stop Button */}
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setStops([...stops, { value: '', coords: null }])}
+            style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '20px', padding: '6px 12px', color: 'hsl(var(--text-muted))', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> Add Stop
           </button>
         </div>
 
