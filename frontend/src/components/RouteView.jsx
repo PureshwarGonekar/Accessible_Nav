@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getRoute, searchAddress } from '../locationService';
+import { getRoute, searchAddress, getCurrentLocation } from '../locationService';
 import { AlertTriangle, CheckCircle, Navigation, Clock, User, ArrowRight, Bookmark, ChevronDown } from 'lucide-react';
 import MapComponent from './MapComponent';
 import api from '../api';
 
-const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelect, mode = 'route' }) => {
+const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelect, mode = 'route', darkMode = false }) => {
+  // ...
+
+
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
@@ -13,7 +16,9 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
 
   const [nearbyHazards, setNearbyHazards] = useState([]);
   const [activeRouteGeometry, setActiveRouteGeometry] = useState(null);
+
   const [activeStopCoords, setActiveStopCoords] = useState([]);
+  const [currentLocation, setCurrentLocation] = useState(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -158,6 +163,16 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
       } else {
         // Hazard Scan Mode - Fetch from Backend
         try {
+          if (!currentLocation) {
+            try {
+              const loc = await getCurrentLocation();
+              setCurrentLocation({ lat: loc.lat, lng: loc.lng });
+            } catch (locErr) {
+              console.warn("Could not get current location", locErr);
+              // Fallback to default or rely on existing startCoords if any
+            }
+          }
+
           const { data } = await api.get('/alerts');
           const mappedHazards = data.map(alert => ({
             type: alert.type,
@@ -312,6 +327,11 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
             obstacles={alert ? [{ message: alert.msg }] : []}
             nearbyHazards={nearbyHazards}
             routeGeometry={activeRouteGeometry}
+            darkMode={darkMode}
+            hideRouteMarkers={mode === 'hazards'}
+            showUserLocation={mode === 'hazards'}
+            startCoords={mode === 'hazards' && currentLocation ? currentLocation : request.startCoords}
+            endCoords={mode === 'hazards' ? null : request.destCoords}
           />
         </div>
       </div>

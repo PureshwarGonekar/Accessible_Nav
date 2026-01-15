@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, Circle, GeoJSON, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import crowdIconImg from '../assets/icons/avoid-crowds.png';
@@ -64,8 +64,7 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = [], routeGeometry, startName, endName, stops = [] }) => {
-  // Center of India (fallback)
+const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = [], routeGeometry, startName, endName, stops = [], darkMode = false, hideRouteMarkers = false, showUserLocation = false }) => {
   // Center of India (fallback)
   const baseLat = 20.5937;
   const baseLng = 78.9629;
@@ -141,9 +140,11 @@ const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = 
         ref={mapRef}
         zoomControl={false}
       >
-        {/* <ChangeView center={startPos} zoom={endPos ? 13 : 15} /> */} {/* ChangeView is replaced by useEffect for fitBounds */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={darkMode
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          }
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
@@ -151,10 +152,19 @@ const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = 
         <ZoomControl position="bottomright" />
 
         {/* Start Marker */}
-        {startCoords && (
+        {startCoords && !hideRouteMarkers && (
           <Marker position={[startCoords.lat, startCoords.lng]} icon={StartIcon}>
             <Popup className="custom-popup">
               <strong>Start</strong><br />{startName || "Origin"}
+            </Popup>
+          </Marker>
+        )}
+
+        {/* User Location Marker (Pulse) */}
+        {startCoords && showUserLocation && (
+          <Marker position={[startCoords.lat, startCoords.lng]} icon={UserIcon}>
+            <Popup className="custom-popup">
+              <strong>You are here</strong>
             </Popup>
           </Marker>
         )}
@@ -171,7 +181,7 @@ const MapComponent = ({ startCoords, endCoords, obstacles = [], nearbyHazards = 
         ))}
 
         {/* End Marker */}
-        {endCoords && (
+        {endCoords && !hideRouteMarkers && (
           <Marker position={[endCoords.lat, endCoords.lng]} icon={EndIcon}>
             <Popup className="custom-popup">
               <strong>Destination</strong><br />{endName || "Destination"}

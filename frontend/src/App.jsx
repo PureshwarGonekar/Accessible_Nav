@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from './api';
-import { Map, MessageSquare, Bell, User, Radar } from 'lucide-react';
+import { Map, MessageSquare, Bell, User, Radar, Sun, Moon } from 'lucide-react';
 import ProfileSetup from './components/ProfileSetup';
 import RouteRequest from './components/RouteRequest';
 import RouteView from './components/RouteView';
@@ -16,6 +16,7 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [request, setRequest] = useState(null);
   const [savedRoutes, setSavedRoutes] = useState([]);
+  const [darkMode, setDarkMode] = useState(true); // Default: Dark Mode
 
   useEffect(() => {
     const initAuth = async () => {
@@ -205,6 +206,24 @@ function App() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
+            onClick={() => setDarkMode(!darkMode)}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              color: 'hsl(var(--text-muted))',
+              cursor: 'pointer',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
             onClick={() => setActiveTab('profile')}
             style={{
               background: activeTab === 'profile' ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.1)',
@@ -252,7 +271,7 @@ function App() {
                 savedRoutes={savedRoutes}
               />
             )}
-            {navStep === 3 && <RouteView request={request} profile={profile} onBack={handleBack} onSave={handleSaveRoute} savedRoutes={savedRoutes} onSelect={handleSelectRoute} />}
+            {navStep === 3 && <RouteView request={request} profile={profile} onBack={handleBack} onSave={handleSaveRoute} savedRoutes={savedRoutes} onSelect={handleSelectRoute} darkMode={darkMode} />}
             {navStep === 4 && (
               <RouteView
                 request={request}
@@ -262,6 +281,7 @@ function App() {
                 onSave={() => { }}
                 savedRoutes={savedRoutes}
                 onSelect={handleSelectRoute}
+                darkMode={darkMode}
               />
             )}
           </div>
