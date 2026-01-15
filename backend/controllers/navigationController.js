@@ -1,3 +1,5 @@
+const { pool } = require('../config/db');
+
 const getRoute = async (req, res) => {
     const { start, end, profile } = req.body;
 
@@ -89,63 +91,104 @@ const getRoute = async (req, res) => {
         return { lat: point[1], lng: point[0] };
     };
 
-    const alerts = [];
-    const guidance = [];
+    let alerts = [];
+    let guidance = [];
 
-    // Generate Profile-Specific Logic with Intelligent Placement
+    // --- 1. Fetch REAL Community Reported Alerts ---
+    // In a real app with PostGIS, we'd use ST_DWithin(route, alert_location).
+    // Here we'll just fetch recent alerts and filter by a simple bounding box or distance in JS.
+    try {
+        // Get all active alerts (limit 100 for performance)
+        const realAlertsResult = await pool.query('SELECT * FROM alerts ORDER BY created_at DESC LIMIT 100');
+        const realAlerts = realAlertsResult.rows;
+
+        // Fetch Community Reports (High Trust Only)
+        const reportsResult = await pool.query("SELECT * FROM reports WHERE status = 'active' AND trust_score > 0.3 ORDER BY created_at DESC LIMIT 50");
+        const communityReports = reportsResult.rows;
+
+        // Combine
+        const allHazards = [...realAlerts, ...communityReports];
+
+        // Filter alerts close to the route (Simple approach: within ~0.01 deg of start or end)
+        // A better approach would be checking distance to any point on the route line.
+        // For this hackathon scope: Include alerts that are generally in the "city" area of the route.
+
+        // Let's filter alerts that are close to start, end, or mid-points.
+        // Or simpler: just pass all recent local alerts to frontend for display? 
+        // Let's filter slightly to avoid global spam if we had multiple cities.
+        const relevantAlerts = allHazards.filter(a => {
+            const latDiff = Math.abs(a.location_lat - startCoords[0]);
+            const lngDiff = Math.abs(a.location_lng - startCoords[1]);
+            return latDiff < 0.1 && lngDiff < 0.1; // Within ~10km
+        });
+
+        relevantAlerts.forEach(a => {
+            alerts.push({
+                type: a.type,
+                message: `${a.message} (Trust: ${Math.round((a.trust_score || 1) * 100)}%)`,
+                lat: parseFloat(a.location_lat),
+                lng: parseFloat(a.location_lng),
+                trust_score: a.trust_score || 1.0,
+                photo_url: a.photo_url,
+                id: a.id,
+                isReal: true
+            });
+        });
+
+    } catch (dbErr) {
+        console.error("Failed to fetch real alerts:", dbErr);
+    }
+
+    // --- 2. Generate Simulated Profile-Specific Logic ---
+    // Only add simulated alerts if we don't have enough real data, or to demonstrate specific use cases.
+
     switch (profile) {
         case 'Wheelchair':
-            const p1 = getRoutePoint(0.2) || { lat: startCoords[0] + 0.0005, lng: startCoords[1] + 0.0005 };
-            const p2 = getRoutePoint(0.6) || { lat: startCoords[0] + 0.0015, lng: startCoords[1] + 0.0015 };
-
-            alerts.push({
-                type: 'Construction',
-                message: 'Curb ramp ahead is blocked. Rerouting via accessible sidewalk.',
-                lat: p1.lat,
-                lng: p1.lng,
-            });
-            alerts.push({
-                type: 'Obstacle',
-                message: 'Narrow footpath detected. Avoid this section.',
-                lat: p2.lat,
-                lng: p2.lng,
-            });
-            guidance.push("Turn left to avoid construction zone.");
+            // Logic: Avoid stairs, narrow paths, construction
+            if (alerts.length === 0) { // Fallback if no real alerts
+                const p1 = getRoutePoint(0.2) || { lat: startCoords[0] + 0.0005, lng: startCoords[1] + 0.0005 };
+                alerts.push({
+                    type: 'Construction',
+                    message: 'Curb ramp ahead is blocked. Rerouting via accessible sidewalk.',
+                    lat: p1.lat,
+                    lng: p1.lng,
+                });
+            }
+            guidance.push("Turn left to avoid construction zone.", "Use the ramp on the right.");
             break;
 
         case 'Walker': // Walker / Crutches
-            const w1 = getRoutePoint(0.3) || { lat: startCoords[0] + 0.001, lng: startCoords[1] + 0.001 };
-            const w2 = getRoutePoint(0.7) || { lat: startCoords[0] + 0.002, lng: startCoords[1] + 0.002 };
-
-            alerts.push({
-                type: 'Crowd',
-                message: 'Crowded path ahead. Switching to a safer route with benches.',
-                lat: w1.lat,
-                lng: w1.lng,
-            });
-            alerts.push({
-                type: 'Slope',
-                message: 'Steep slope ahead. Rerouting to flatter terrain.',
-                lat: w2.lat,
-                lng: w2.lng,
-            });
-            guidance.push("Keep right for flatter surface.");
+            // Logic: Avoid slopes, crowds, uneven terrain
+            if (alerts.length < 2) {
+                const w1 = getRoutePoint(0.3) || { lat: startCoords[0] + 0.001, lng: startCoords[1] + 0.001 };
+                alerts.push({
+                    type: 'Slope',
+                    message: 'Steep slope ahead. Rerouting to flatter terrain.',
+                    lat: w1.lat,
+                    lng: w1.lng,
+                });
+            }
+            guidance.push("Keep right for flatter surface.", "Avoid the cobblestone path.");
             break;
 
-        case 'Temporary': // Temporary Mobility Impairments
-            const t1 = getRoutePoint(0.5) || { lat: startCoords[0] + 0.001, lng: startCoords[1] + 0.001 };
-            alerts.push({
-                type: 'Info',
-                message: 'This route is longer but has fewer steps and smoother surface.',
-                lat: t1.lat,
-                lng: t1.lng,
-            });
+        case 'Temporary': // Temporary Mobility Impairments (Injury, Pregnant)
+            // Logic: Low impact, few steps, frequent stops
+            if (alerts.length < 1) {
+                const t1 = getRoutePoint(0.5) || { lat: startCoords[0] + 0.001, lng: startCoords[1] + 0.001 };
+                alerts.push({
+                    type: 'Info',
+                    message: 'This route is longer but has fewer steps and smoother surface.',
+                    lat: t1.lat,
+                    lng: t1.lng,
+                });
+            }
             guidance.push("Follow the green path for step-free access.");
             break;
 
-        case 'Fatigue': // Chronic Conditions
+        case 'Fatigue': // Chronic Conditions (MS, Arthritis)
+            // Logic: Rest spots, minimizing total exertion
             const f1 = getRoutePoint(0.25) || { lat: startCoords[0] + 0.0008, lng: startCoords[1] + 0.0008 };
-            const f2 = getRoutePoint(0.75) || { lat: startCoords[0] + 0.0025, lng: startCoords[1] + 0.0025 };
+            const f2 = getRoutePoint(0.60) || { lat: startCoords[0] + 0.0020, lng: startCoords[1] + 0.0020 };
 
             alerts.push({
                 type: 'Rest',
@@ -155,14 +198,15 @@ const getRoute = async (req, res) => {
             });
             alerts.push({
                 type: 'Rest',
-                message: 'Bench available here.',
+                message: 'Public bench available here.',
                 lat: f2.lat,
                 lng: f2.lng,
             });
             guidance.push("Take a break at the upcoming bench.");
             break;
 
-        case 'Cognitive': // Cognitive Disabilities
+        case 'Cognitive': // Cognitive Disabilities (Autism, ADHD)
+            // Logic: Simple instructions, avoid crowds, sensory overload
             const c1 = getRoutePoint(0.1) || { lat: startCoords[0], lng: startCoords[1] };
             alerts.push({
                 type: 'Info',
@@ -170,19 +214,33 @@ const getRoute = async (req, res) => {
                 lat: c1.lat,
                 lng: c1.lng,
             });
-            guidance.push("Go straight for 20 steps.", "Then turn left."); // Simplified instructions
+            guidance.push("Go straight for 20 steps.", "Then turn left."); // Hyper-simplified
             break;
 
         case 'Elderly':
+            // Logic: Larger text (meta), slow pace, safety, avoidance of busy roads
             const e1 = getRoutePoint(0.4) || { lat: startCoords[0] + 0.0012, lng: startCoords[1] + 0.0012 };
             alerts.push({
                 type: 'Info',
-                message: 'Busy area ahead. Please wait while we find a safer route.',
+                message: 'Busy crossing ahead. Please wait for the signal.',
                 lat: e1.lat,
                 lng: e1.lng,
             });
             // Metadata for frontend to increase font size/audio
             res.set('X-Sim-Profile-Meta', JSON.stringify({ largeText: true, slowerAudio: true }));
+            guidance.push("Walk slowly. Busy area ahead.", "Cross strictly at the zebra crossing.");
+            break;
+
+        case 'Caregiver':
+            // Logic: Remote monitoring view (mostly frontend), safe routes
+            // Maybe alert about a "Safe Zone" or "Assistance Point"
+            alerts.push({
+                type: 'Info',
+                message: 'Route mostly sidewalks. High visibility area.',
+                lat: startCoords[0],
+                lng: startCoords[1]
+            });
+            guidance.push("Route shared with caregiver.");
             break;
 
         default:

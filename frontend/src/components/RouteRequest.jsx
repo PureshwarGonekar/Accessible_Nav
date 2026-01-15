@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Search, ArrowUpDown, Plus, X, ArrowRight, Loader } from 'lucide-react';
 import { getCurrentLocation, searchAddress } from '../locationService';
+import VoiceInput from './VoiceInput';
 
 const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
   const [start, setStart] = useState('Current Location');
@@ -163,18 +164,31 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                 setActiveSuggestionField('start');
               }}
               onFocus={() => setActiveSuggestionField('start')}
-              style={{ paddingLeft: '48px', flex: 1 }}
+              style={{
+                paddingLeft: '48px',
+                paddingRight: '48px',
+                flex: 1,
+                background: 'rgba(128,128,128,0.1)',
+                color: 'hsl(var(--text-main))',
+                border: '1px solid var(--glass-border)'
+              }}
               placeholder="Start Location"
             />
+            <div style={{ position: 'absolute', right: '10px', zIndex: 10 }}>
+              <VoiceInput onSpeechDetected={(text) => {
+                setStart(text);
+                setActiveSuggestionField('start');
+              }} />
+            </div>
           </div>
           {/* Start Suggestions */}
           {activeSuggestionField === 'start' && (startSuggestions.length > 0 || start === '' || isFetchingSuggestions) && (
             <div className="suggestions-dropdown" style={{
               position: 'absolute', top: '100%', left: 0, right: 0,
-              background: 'hsl(var(--bg-card))', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'hsl(var(--bg-card))', border: '1px solid var(--glass-border)',
               zIndex: 20, borderRadius: '8px', overflow: 'hidden',
               marginTop: '4px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+              boxShadow: 'var(--shadow-lg)'
             }}>
               {start !== 'Current Location' && !isFetchingSuggestions && start.length < 3 && (
                 <div
@@ -193,11 +207,11 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                 <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>No location found</div>
               )}
               {!isFetchingSuggestions && startSuggestions.map((item, i) => (
-                <div key={i} onClick={() => handleSelectSuggestion('start', item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                <div key={i} onClick={() => handleSelectSuggestion('start', item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid var(--glass-border)' : 'none', transition: 'background 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(128,128,128,0.1)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <div style={{ fontWeight: '500', color: 'hsl(var(--text-primary))' }}>{item.main_text}</div>
+                  <div style={{ fontWeight: '500', color: 'hsl(var(--text-main))' }}>{item.main_text}</div>
                   <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
                     {item.secondary_text}
                   </div>
@@ -213,7 +227,7 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
             type="button"
             onClick={handleFlip}
             style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: 'rgba(128,128,128,0.1)',
               border: 'none', borderRadius: '50%', width: '32px', height: '32px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'hsl(var(--text-muted))'
             }}
@@ -239,7 +253,13 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                   setActiveSuggestionField(`stop-${index}`);
                 }}
                 onFocus={() => setActiveSuggestionField(`stop-${index}`)}
-                style={{ paddingLeft: '48px', flex: 1 }}
+                style={{
+                  paddingLeft: '48px',
+                  flex: 1,
+                  background: 'rgba(128,128,128,0.1)',
+                  color: 'hsl(var(--text-main))',
+                  border: '1px solid var(--glass-border)'
+                }}
               />
               <button
                 type="button"
@@ -257,10 +277,10 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
             {activeSuggestionField === `stop-${index}` && (stopSuggestions.length > 0 || isFetchingSuggestions) && (
               <div className="suggestions-dropdown" style={{
                 position: 'absolute', top: '100%', left: 0, right: 0,
-                background: 'hsl(var(--bg-card))', border: '1px solid rgba(255,255,255,0.1)',
+                background: 'hsl(var(--bg-card))', border: '1px solid var(--glass-border)',
                 zIndex: 20, borderRadius: '8px', overflow: 'hidden',
                 marginTop: '4px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                boxShadow: 'var(--shadow-lg)'
               }}>
                 {isFetchingSuggestions && (
                   <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
@@ -271,11 +291,11 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                   <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>No location found</div>
                 )}
                 {!isFetchingSuggestions && stopSuggestions.map((item, i) => (
-                  <div key={i} onClick={() => handleSelectSuggestion(`stop-${index}`, item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  <div key={i} onClick={() => handleSelectSuggestion(`stop-${index}`, item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid var(--glass-border)' : 'none', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(128,128,128,0.1)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div style={{ fontWeight: '500', color: 'hsl(var(--text-primary))' }}>{item.main_text}</div>
+                    <div style={{ fontWeight: '500', color: 'hsl(var(--text-main))' }}>{item.main_text}</div>
                     <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
                       {item.secondary_text}
                     </div>
@@ -291,7 +311,7 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
           <button
             type="button"
             onClick={() => setStops([...stops, { value: '', coords: null }])}
-            style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '20px', padding: '6px 12px', color: 'hsl(var(--text-muted))', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ background: 'none', border: '1px dashed var(--glass-border)', borderRadius: '20px', padding: '6px 12px', color: 'hsl(var(--text-muted))', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Plus size={14} /> Add Stop
           </button>
@@ -310,17 +330,29 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                 setActiveSuggestionField('dest');
               }}
               onFocus={() => setActiveSuggestionField('dest')}
-              style={{ paddingLeft: '48px' }}
+              style={{
+                paddingLeft: '48px',
+                paddingRight: '48px', // Make room for mic
+                background: 'rgba(128,128,128,0.1)',
+                color: 'hsl(var(--text-main))',
+                border: '1px solid var(--glass-border)'
+              }}
               placeholder="Enter Destination"
             />
+            <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+              <VoiceInput onSpeechDetected={(text) => {
+                setDest(text);
+                setActiveSuggestionField('dest'); // Trigger search
+              }} />
+            </div>
           </div>
           {/* Dest Suggestions */}
           {activeSuggestionField === 'dest' && (destSuggestions.length > 0 || isFetchingSuggestions) && (
             <div className="suggestions-dropdown" style={{
               position: 'absolute', top: '100%', left: 0, right: 0,
-              background: 'hsl(var(--bg-card))', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'hsl(var(--bg-card))', border: '1px solid var(--glass-border)',
               zIndex: 20, borderRadius: '8px', overflow: 'hidden', marginTop: '4px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+              boxShadow: 'var(--shadow-lg)'
             }}>
               {isFetchingSuggestions && (
                 <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>
@@ -331,11 +363,11 @@ const RouteRequest = ({ onSearch, profile, savedRoutes = [] }) => {
                 <div style={{ padding: '12px', textAlign: 'center', color: 'hsl(var(--text-muted))' }}>No location found</div>
               )}
               {!isFetchingSuggestions && destSuggestions.map((item, i) => (
-                <div key={i} onClick={() => handleSelectSuggestion('dest', item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                <div key={i} onClick={() => handleSelectSuggestion('dest', item)} style={{ padding: '12px', cursor: 'pointer', borderTop: i > 0 ? '1px solid var(--glass-border)' : 'none', transition: 'background 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(128,128,128,0.1)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <div style={{ fontWeight: '500', color: 'hsl(var(--text-primary))' }}>{item.main_text}</div>
+                  <div style={{ fontWeight: '500', color: 'hsl(var(--text-main))' }}>{item.main_text}</div>
                   <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', marginTop: '2px' }}>
                     {item.secondary_text}
                   </div>

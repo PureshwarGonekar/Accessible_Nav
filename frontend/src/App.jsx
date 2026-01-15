@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from './api';
-import { Map, MessageSquare, Bell, User, Radar, Sun, Moon, Home } from 'lucide-react';
+import { Map, MessageSquare, Bell, User, Radar, Sun, Moon, Home, PlusCircle } from 'lucide-react';
 import ProfileSetup from './components/ProfileSetup';
 import RouteRequest from './components/RouteRequest';
 import RouteView from './components/RouteView';
@@ -9,6 +9,7 @@ import AlertsFeed from './components/AlertsFeed';
 import AuthPage from './components/AuthPage';
 import ProfilePage from './components/ProfilePage';
 import HomePage from './components/HomePage';
+import ReportObstacleModal from './components/ReportObstacleModal';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,6 +19,7 @@ function App() {
   const [request, setRequest] = useState(null);
   const [savedRoutes, setSavedRoutes] = useState([]);
   const [darkMode, setDarkMode] = useState(true); // Default: Dark Mode
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -245,13 +247,34 @@ function App() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
+            onClick={() => setShowReportModal(true)}
+            className="btn-primary" // Use btn-primary for styling
+            style={{
+              background: 'hsl(var(--warning))',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.9rem',
+              fontWeight: '600'
+            }}
+            title="Report an Obstacle"
+          >
+            <PlusCircle size={16} /> Report Issue
+          </button>
+
+          <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
               background: 'rgba(255,255,255,0.1)',
               border: 'none',
               color: 'hsl(var(--text-muted))',
               cursor: 'pointer',
-              width: '36px',
+              width: '70px',
               height: '36px',
               borderRadius: '50%',
               display: 'flex',
@@ -269,7 +292,7 @@ function App() {
               border: 'none',
               color: 'white',
               cursor: 'pointer',
-              width: '36px',
+              width: '70px',
               height: '36px',
               borderRadius: '50%',
               display: 'flex',
@@ -295,12 +318,12 @@ function App() {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        padding: (activeTab === 'navigation' && navStep === 3) ? '20px' : '40px',
-        maxWidth: (activeTab === 'navigation' && navStep === 3) ? '100%' : '1200px',
+        padding: (activeTab === 'navigation' && (navStep === 3 || navStep === 4)) ? '20px' : '40px',
+        maxWidth: (activeTab === 'navigation' && (navStep === 3 || navStep === 4)) ? '100%' : '1200px',
         margin: '0 auto'
       }}>
         {activeTab === 'home' && (
-          <HomePage onNavigate={setActiveTab} />
+          <HomePage onNavigate={setActiveTab} darkMode={darkMode} />
         )}
 
         {activeTab === 'navigation' && (
@@ -353,6 +376,19 @@ function App() {
       }}>
         © 2026 Accessible Navigation AI. Empowering mobility for everyone.
       </footer>
+
+      {/* Modals */}
+      {showReportModal && (
+        <ReportObstacleModal
+          onClose={() => setShowReportModal(false)}
+          onReportSubmitted={() => {
+            // Optional: refresh alerts if on alerts tab
+            if (activeTab === 'alerts') {
+              // Trigger refresh not implemented yet, but AlertsFeed polls
+            }
+          }}
+        />
+      )}
 
     </div>
   );

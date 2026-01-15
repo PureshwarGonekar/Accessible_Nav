@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getRoute, searchAddress, getCurrentLocation } from '../locationService';
 import { AlertTriangle, CheckCircle, Navigation, Clock, User, ArrowRight, Bookmark, ChevronDown } from 'lucide-react';
 import MapComponent from './MapComponent';
+import useAudioGuidance from '../hooks/useAudioGuidance';
 import api from '../api';
 
 const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelect, mode = 'route', darkMode = false }) => {
@@ -106,10 +107,13 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
                   setActiveRouteGeometry(data.routeGeometry);
                   // Map alerts to detailed hazards for MapComponent
                   setNearbyHazards(data.alerts.map(a => ({
+                    id: a.id, // Ensure ID is passed if available
                     type: a.type,
                     lat: a.lat,
                     lng: a.lng,
-                    details: a.message
+                    details: a.message,
+                    trust_score: a.trust_score,
+                    photo_url: a.photo_url
                   })));
 
                   setLoading(false);
@@ -163,24 +167,75 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
       } else {
         // Hazard Scan Mode - Fetch from Backend
         try {
-          if (!currentLocation) {
+          let userLoc = currentLocation;
+          if (!userLoc) {
             try {
               const loc = await getCurrentLocation();
-              setCurrentLocation({ lat: loc.lat, lng: loc.lng });
+              userLoc = { lat: loc.lat, lng: loc.lng };
+              setCurrentLocation(userLoc);
             } catch (locErr) {
               console.warn("Could not get current location", locErr);
-              // Fallback to default or rely on existing startCoords if any
+              userLoc = { lat: 20.5937, lng: 78.9629 }; // Fallback
             }
           }
 
-          const { data } = await api.get('/alerts');
-          const mappedHazards = data.map(alert => ({
-            type: alert.type,
-            lat: parseFloat(alert.location_lat),
-            lng: parseFloat(alert.location_lng),
-            details: alert.message
+          const { data } = await api.get('/reports'); // Changed to reports endpoint
+          const mappedHazards = data.map(report => ({
+            id: report.id, // Important for validation
+            type: report.type,
+            lat: parseFloat(report.location_lat),
+            lng: parseFloat(report.location_lng),
+            details: report.message,
+            trust_score: report.trust_score,
+            photo_url: report.photo_url, // Include photo
+            isReal: true
           }));
-          setNearbyHazards(mappedHazards);
+
+          // Add samples for demo 
+          const sampleHazards = [
+            {
+              id: 'sample1',
+              type: 'Construction',
+              details: 'Road widening work in progress. Heavy machinery operating.',
+              trust_score: 0.9,
+              photo_url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=500&q=80',
+              lat: userLoc.lat + 0.002,
+              lng: userLoc.lng + 0.002,
+              isReal: false
+            },
+            {
+              id: 'sample2',
+              type: 'Obstacle',
+              details: 'Fallen tree blocking the sidewalk.',
+              trust_score: 0.85,
+              photo_url: 'https://images.unsplash.com/photo-1550966871-3ed3c6227b42?w=500&q=80',
+              lat: userLoc.lat - 0.0015,
+              lng: userLoc.lng - 0.0015,
+              isReal: false
+            },
+            {
+              id: 'sample3',
+              type: 'Crowd',
+              details: 'Heavy foot traffic reported near the market entrance.',
+              trust_score: 0.75,
+              photo_url: 'https://images.unsplash.com/photo-1576082838383-7c271cb4cbfa?w=500&q=80',
+              lat: userLoc.lat + 0.0015,
+              lng: userLoc.lng - 0.001,
+              isReal: false
+            },
+            {
+              id: 'sample4',
+              type: 'Slope',
+              details: 'Steep ramp detected. Requires assistance for manual wheelchairs.',
+              trust_score: 0.95,
+              photo_url: 'https://images.unsplash.com/photo-1623943640244-63510c4fb712?w=500&q=80',
+              lat: userLoc.lat - 0.001,
+              lng: userLoc.lng + 0.0015,
+              isReal: false
+            }
+          ];
+
+          setNearbyHazards([...mappedHazards, ...sampleHazards]);
         } catch (err) {
           console.error('Failed to fetch hazards', err);
           setNearbyHazards([]);
@@ -193,6 +248,17 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
     fetchRoutes();
 
   }, [request, mode]);
+
+  // Audio Guidance
+  const { speak } = useAudioGuidance(profile?.guidance_preference === 'audio');
+
+  // Speak on route loaded
+  useEffect(() => {
+    if (!loading && routes.length > 0 && profile?.guidance_preference === 'audio') {
+      const bestRoute = routes[0];
+      speak(`Route found. ${bestRoute.type}. ${bestRoute.details}.`, true);
+    }
+  }, [loading, routes, profile, speak]);
 
   // Simulate incoming live event
   useEffect(() => {
@@ -207,10 +273,15 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
 
       // Downgrade score of Route 2
       setRoutes(prev => prev.map(r => r.id === 2 ? { ...r, score: 40, hazards: [...r.hazards, 'Blocked Sidewalk'] } : r));
+
+      // Speak visual alert
+      if (profile?.guidance_preference === 'audio') {
+        speak('Caution. New obstacle detected. Construction barrier on Route 2.', true);
+      }
     }, 4000);
 
     return () => clearTimeout(eventTimer);
-  }, [loading]);
+  }, [loading, profile, speak]);
 
   if (loading) {
     return (
@@ -319,8 +390,6 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
 
         <div style={{ flex: 1, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
           <MapComponent
-            startCoords={request.startCoords}
-            endCoords={request.destCoords}
             stops={activeStopCoords}
             startName={request.start}
             endName={request.dest}
@@ -337,7 +406,59 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
       </div>
 
       {/* Right Column: Alerts & Routes (1fr) */}
-      <div style={{ overflowY: 'auto', padding: '20px', background: 'rgba(0,0,0,0.2)', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="no-scrollbar" style={{ overflowY: 'auto', padding: '20px', background: 'rgba(0,0,0,0.2)', borderLeft: '1px solid rgba(255,255,255,0.05)' }}>
+
+        {/* Hazards Mode List */}
+        {mode === 'hazards' && (
+          <div className="fade-in">
+            <h4 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={18} color="hsl(var(--warning))" /> Real-time Hurdles
+            </h4>
+            {nearbyHazards.length === 0 && <div style={{ color: 'hsl(var(--text-muted))' }}>No active hazards reported nearby.</div>}
+
+            {nearbyHazards.map((hazard, i) => (
+              <div key={hazard.id || i} className="card" style={{ marginBottom: '12px', padding: '12px', borderLeft: `3px solid ${hazard.trust_score > 0.7 ? 'hsl(var(--danger))' : 'hsl(var(--warning))'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <strong style={{ fontSize: '0.9rem' }}>{hazard.type}</strong>
+                  {hazard.trust_score && (
+                    <span style={{ fontSize: '0.7rem', color: hazard.trust_score > 0.7 ? 'hsl(var(--success))' : 'hsl(var(--warning))', fontWeight: 'bold' }}>
+                      {Math.round(hazard.trust_score * 100)}% Trust
+                    </span>
+                  )}
+                </div>
+
+                {hazard.photo_url && (
+                  <div style={{ marginBottom: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                    <img
+                      src={hazard.photo_url.startsWith('http') ? hazard.photo_url : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/${hazard.photo_url}`}
+                      alt="Hurdle"
+                      style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
+                    />
+                  </div>
+                )}
+
+                <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))', margin: 0 }}>
+                  {hazard.details}
+                </p>
+
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <button style={{ flex: 1, padding: '4px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', color: 'hsl(var(--text))', cursor: 'pointer' }}>
+                    Verify
+                  </button>
+                  <button style={{ flex: 1, padding: '4px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', color: 'hsl(var(--text))', cursor: 'pointer' }}>
+                    View on Map
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <small style={{ color: 'hsl(var(--text-muted))' }}>
+                Crowdsourced updates refresh every 30s.
+              </small>
+            </div>
+          </div>
+        )}
 
         {/* Live Alerts Section */}
         {alert && (
@@ -355,8 +476,8 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
           </div>
         )}
 
-        {/* Route Cards */}
-        {routes.map(route => (
+        {/* Route Cards (Only show if NOT in hazards mode) */}
+        {mode !== 'hazards' && routes.map(route => (
           <div key={route.id} className="card" style={{ padding: '16px', marginBottom: '12px', background: route.score > 80 ? 'hsl(var(--bg-card))' : 'rgba(255, 50, 50, 0.05)', borderColor: route.score > 80 ? 'hsl(var(--success))' : 'transparent' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div>
@@ -401,9 +522,11 @@ const RouteView = ({ request, profile, onBack, onSave, savedRoutes = [], onSelec
           </div>
         ))}
 
-        <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))', marginTop: '20px' }}>
-          Real-time Data Active
-        </div>
+        {mode !== 'hazards' && (
+          <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'hsl(var(--text-muted))', marginTop: '20px' }}>
+            Real-time Data Active
+          </div>
+        )}
       </div>
     </div>
   );

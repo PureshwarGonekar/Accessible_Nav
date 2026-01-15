@@ -42,7 +42,7 @@ const ChatInterface = () => {
 
   return (
     <div className="card" style={{ height: '600px', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
-      <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
+      <div style={{ padding: '20px', borderBottom: '1px solid var(--glass-border)', background: 'var(--glass-highlight)' }}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Bot size={24} color="hsl(var(--primary))" /> AI Assistant
         </h3>
@@ -50,10 +50,10 @@ const ChatInterface = () => {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {messages.map((msg) => (
-          <div 
-            key={msg.id} 
-            style={{ 
-              display: 'flex', 
+          <div
+            key={msg.id}
+            style={{
+              display: 'flex',
               justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
               alignItems: 'flex-end',
               gap: '8px'
@@ -64,13 +64,13 @@ const ChatInterface = () => {
                 <Bot size={16} color="white" />
               </div>
             )}
-            
-            <div style={{ 
-              maxWidth: '70%', 
-              padding: '12px 16px', 
-              borderRadius: '16px', 
-              background: msg.sender === 'user' ? 'hsl(var(--primary))' : 'hsl(var(--bg-input))',
-              color: 'white',
+
+            <div style={{
+              maxWidth: '70%',
+              padding: '12px 16px',
+              borderRadius: '16px',
+              background: msg.sender === 'user' ? 'hsl(var(--primary))' : 'rgba(128,128,128,0.15)', // Neutral gray for bot
+              color: msg.sender === 'user' ? 'white' : 'hsl(var(--text-main))', // Theme aware text
               fontSize: '0.95rem',
               borderBottomLeftRadius: msg.sender === 'bot' ? '4px' : '16px',
               borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
@@ -80,8 +80,8 @@ const ChatInterface = () => {
             </div>
 
             {msg.sender === 'user' && (
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <User size={16} color="white" />
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(128,128,128,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={16} color="hsl(var(--text-main))" />
               </div>
             )}
           </div>
@@ -89,26 +89,26 @@ const ChatInterface = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '10px' }}>
-        <input 
-          type="text" 
+      <div style={{ padding: '20px', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '10px' }}>
+        <input
+          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask about routes, accessibility, or safety..." 
-          style={{ 
-            flex: 1, 
-            background: 'hsl(var(--bg-input))', 
-            border: 'none', 
-            padding: '14px', 
-            borderRadius: 'var(--radius-sm)', 
-            color: 'white',
+          placeholder="Ask about routes, accessibility, or safety..."
+          style={{
+            flex: 1,
+            background: 'rgba(128,128,128,0.1)', // Adaptive background
+            border: 'none',
+            padding: '14px',
+            borderRadius: 'var(--radius-sm)',
+            color: 'hsl(var(--text-main))', // Theme aware text
             outline: 'none'
           }}
         />
-        <button 
+        <button
           onClick={handleSend}
-          className="btn-primary" 
+          className="btn-primary"
           style={{ width: 'auto', padding: '0 20px' }}
         >
           <Send size={20} />

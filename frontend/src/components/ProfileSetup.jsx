@@ -11,9 +11,14 @@ const ProfileSetup = ({ onComplete, savedProfile }) => {
 
   React.useEffect(() => {
     if (savedProfile) {
-      if (savedProfile.mobility_profile) {
+      // Map DB field (mobility_type array) to local state (single string)
+      if (savedProfile.mobility_type && savedProfile.mobility_type.length > 0) {
+        setActiveProfile(savedProfile.mobility_type[0]);
+      } else if (savedProfile.mobility_profile) {
+        // Fallback for legacy
         setActiveProfile(savedProfile.mobility_profile);
       }
+
       if (savedProfile.guidance_preference) {
         setPreferences(prev => ({ ...prev, guidance: savedProfile.guidance_preference }));
       }
