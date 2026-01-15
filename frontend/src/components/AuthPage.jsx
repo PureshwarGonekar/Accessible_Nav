@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, ArrowRight } from 'lucide-react';
+import { User, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import api from '../api';
 
 const AuthPage = ({ onLogin }) => {
@@ -27,7 +27,6 @@ const AuthPage = ({ onLogin }) => {
           email: formData.email,
           password: formData.password
         });
-        // data = { message, token, user }
         onLogin(data);
       } else {
         // SIGN UP LOGIC
@@ -50,18 +49,15 @@ const AuthPage = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      background: 'hsl(var(--bg-app))',
-      padding: '20px'
-    }}>
-      <div className="card fade-in" style={{ width: '100%', maxWidth: '400px', padding: '40px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ color: 'hsl(var(--primary))', marginBottom: '10px' }}>Accessible Nav</h1>
-          <p style={{ color: 'hsl(var(--text-muted))' }}>
+    <div className="auth-container">
+      {/* Background Blobs */}
+      <div className="auth-bg-blob blob-1"></div>
+      <div className="auth-bg-blob blob-2"></div>
+
+      <div className="glass-card fade-in-up" style={{ width: '100%', maxWidth: '440px' }}>
+        <div className="auth-header">
+          <h1 className="auth-title">Accessible Nav</h1>
+          <p className="auth-subtitle">
             {isLogin ? 'Welcome back! Please login.' : 'Create an account to get started.'}
           </p>
         </div>
@@ -69,71 +65,68 @@ const AuthPage = ({ onLogin }) => {
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="input-group">
-              <label>Full Name</label>
-              <div className="input-with-icon">
-                <User size={18} />
+              <label className="input-label">Full Name</label>
+              <div className="input-wrapper">
                 <input 
                   type="text" 
                   name="name" 
+                  className="input-field"
                   placeholder="John Doe" 
                   value={formData.name}
                   onChange={handleChange}
                 />
+                <User size={20} className="input-icon" />
               </div>
             </div>
           )}
 
           <div className="input-group">
-            <label>Email Address</label>
-            <div className="input-with-icon">
-              <Mail size={18} />
+            <label className="input-label">Email Address</label>
+            <div className="input-wrapper">
               <input 
                 type="email" 
                 name="email" 
+                className="input-field"
                 placeholder="you@example.com" 
                 value={formData.email}
                 onChange={handleChange}
               />
+              <Mail size={20} className="input-icon" />
             </div>
           </div>
 
           <div className="input-group">
-            <label>Password</label>
-            <div className="input-with-icon">
-              <Lock size={18} />
+            <label className="input-label">Password</label>
+            <div className="input-wrapper">
               <input 
                 type="password" 
                 name="password" 
+                className="input-field"
                 placeholder="••••••••" 
                 value={formData.password}
                 onChange={handleChange}
               />
+              <Lock size={20} className="input-icon" />
             </div>
           </div>
 
           {error && (
-            <div style={{ color: 'hsl(var(--danger))', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center' }}>
+            <div className="error-message">
+              <AlertCircle size={18} style={{ marginRight: '8px' }} />
               {error}
             </div>
           )}
 
-          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-            {isLogin ? 'Login' : 'Sign Up'} <ArrowRight size={18} />
+          <button type="submit" className="btn-primary">
+            {isLogin ? 'Login' : 'create Account'} <ArrowRight size={20} />
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.9rem', color: 'hsl(var(--text-muted))' }}>
+        <div className="auth-footer">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button 
             onClick={() => setIsLogin(!isLogin)}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: 'hsl(var(--primary))', 
-              fontWeight: 'bold', 
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
+            className="btn-link"
           >
             {isLogin ? 'Sign Up' : 'Login'}
           </button>

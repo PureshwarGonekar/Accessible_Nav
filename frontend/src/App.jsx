@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from './api';
-import { Map, MessageSquare, Bell, User, Radar, Sun, Moon } from 'lucide-react';
+import { Map, MessageSquare, Bell, User, Radar, Sun, Moon, Home } from 'lucide-react';
 import ProfileSetup from './components/ProfileSetup';
 import RouteRequest from './components/RouteRequest';
 import RouteView from './components/RouteView';
@@ -8,10 +8,11 @@ import ChatInterface from './components/ChatInterface';
 import AlertsFeed from './components/AlertsFeed';
 import AuthPage from './components/AuthPage';
 import ProfilePage from './components/ProfilePage';
+import HomePage from './components/HomePage';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('navigation'); // navigation, chat, alerts, profile
+  const [activeTab, setActiveTab] = useState('home'); // home, navigation, chat, alerts, profile
   const [navStep, setNavStep] = useState(1);
   const [profile, setProfile] = useState(null);
   const [request, setRequest] = useState(null);
@@ -48,23 +49,21 @@ function App() {
     // data should be { user, token }
     setUser(data.user);
     localStorage.setItem('token', data.token);
-    setActiveTab('navigation');
+    setActiveTab('home');
     loadSavedRoutes();
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
-    setActiveTab('navigation');
+    setActiveTab('home');
     setSavedRoutes([]);
     setProfile(null);
   };
 
   // Navigation Logic
   const handleProfileComplete = (profileData) => {
-    // This is handled in ProfileSetup via API now, but we update local state
-    setProfile(profileData); // Optional: re-fetch from API to be sure
-    // Update user.profile locally for immediate UI update
+    setProfile(profileData);
     setUser(prev => ({ ...prev, profile: profileData }));
     setNavStep(2);
   };
@@ -99,7 +98,7 @@ function App() {
   }
 
   return (
-    <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'hsl(var(--bg-app))', color: 'hsl(var(--text-primary))' }}>
+    <div className={`app-container ${!darkMode ? 'light-mode' : ''}`} style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'hsl(var(--bg-dark))', color: 'hsl(var(--text-main))' }}>
 
       {/* Header */}
       <header style={{
@@ -107,22 +106,54 @@ function App() {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '16px 40px',
-        background: 'rgba(20, 20, 25, 0.8)',
+        background: darkMode ? 'rgba(20, 20, 25, 0.8)' : 'hsl(var(--primary))',
         backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: darkMode ? '1px solid rgba(255,255,255,0.05)' : 'none',
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: !darkMode ? '0 4px 20px rgba(100, 80, 255, 0.2)' : 'none',
+        transition: 'all 0.3s ease'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div
+          onClick={() => setActiveTab('home')}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+        >
           {/* Logo Icon */}
-          <div style={{ width: '32px', height: '32px', background: 'hsl(var(--primary))', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Map size={20} color="white" />
+          <div style={{
+            width: '32px',
+            height: '32px',
+            background: darkMode ? 'hsl(var(--primary))' : 'white',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Map size={20} color={darkMode ? "white" : "hsl(var(--primary))"} />
           </div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: '700', letterSpacing: '-0.02em', margin: 0 }}>Accessible Nav</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: '700', letterSpacing: '-0.02em', margin: 0, color: darkMode ? 'white' : 'white' }}>Accessible Nav</h1>
         </div>
 
         <nav style={{ display: 'flex', gap: '32px' }}>
+          <button
+            onClick={() => setActiveTab('home')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: !darkMode
+                ? (activeTab === 'home' ? 'white' : 'rgba(255,255,255,0.7)')
+                : (activeTab === 'home' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))'),
+              fontWeight: activeTab === 'home' ? '700' : '400',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.95rem'
+            }}
+          >
+            <Home size={18} /> Home
+          </button>
+
           <button
             onClick={() => {
               setActiveTab('navigation');
@@ -137,8 +168,10 @@ function App() {
             style={{
               background: 'none',
               border: 'none',
-              color: activeTab === 'navigation' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))',
-              fontWeight: activeTab === 'navigation' ? '600' : '400',
+              color: !darkMode
+                ? (activeTab === 'navigation' ? 'white' : 'rgba(255,255,255,0.7)')
+                : (activeTab === 'navigation' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))'),
+              fontWeight: activeTab === 'navigation' ? '700' : '400',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -153,8 +186,10 @@ function App() {
             style={{
               background: 'none',
               border: 'none',
-              color: activeTab === 'chat' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))',
-              fontWeight: activeTab === 'chat' ? '600' : '400',
+              color: !darkMode
+                ? (activeTab === 'chat' ? 'white' : 'rgba(255,255,255,0.7)')
+                : (activeTab === 'chat' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))'),
+              fontWeight: activeTab === 'chat' ? '700' : '400',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -169,8 +204,10 @@ function App() {
             style={{
               background: 'none',
               border: 'none',
-              color: activeTab === 'alerts' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))',
-              fontWeight: activeTab === 'alerts' ? '600' : '400',
+              color: !darkMode
+                ? (activeTab === 'alerts' ? 'white' : 'rgba(255,255,255,0.7)')
+                : (activeTab === 'alerts' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))'),
+              fontWeight: activeTab === 'alerts' ? '700' : '400',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -191,8 +228,10 @@ function App() {
             style={{
               background: 'none',
               border: 'none',
-              color: (activeTab === 'navigation' && navStep === 4) ? 'hsl(var(--danger))' : 'hsl(var(--text-muted))',
-              fontWeight: (activeTab === 'navigation' && navStep === 4) ? '600' : '400',
+              color: !darkMode
+                ? ((activeTab === 'navigation' && navStep === 4) ? 'white' : 'rgba(255,255,255,0.7)')
+                : ((activeTab === 'navigation' && navStep === 4) ? 'hsl(var(--danger))' : 'hsl(var(--text-muted))'),
+              fontWeight: (activeTab === 'navigation' && navStep === 4) ? '700' : '400',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -260,6 +299,9 @@ function App() {
         maxWidth: (activeTab === 'navigation' && navStep === 3) ? '100%' : '1200px',
         margin: '0 auto'
       }}>
+        {activeTab === 'home' && (
+          <HomePage onNavigate={setActiveTab} />
+        )}
 
         {activeTab === 'navigation' && (
           <div className="fade-in">
