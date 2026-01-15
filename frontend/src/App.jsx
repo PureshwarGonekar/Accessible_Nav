@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from './api';
-import { Map, MessageSquare, Bell, User, Radar } from 'lucide-react';
+import { Map, MessageSquare, Bell, User, Radar, Home } from 'lucide-react';
 import ProfileSetup from './components/ProfileSetup';
 import RouteRequest from './components/RouteRequest';
 import RouteView from './components/RouteView';
@@ -8,10 +8,11 @@ import ChatInterface from './components/ChatInterface';
 import AlertsFeed from './components/AlertsFeed';
 import AuthPage from './components/AuthPage';
 import ProfilePage from './components/ProfilePage';
+import HomePage from './components/HomePage';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('navigation'); // navigation, chat, alerts, profile
+  const [activeTab, setActiveTab] = useState('home'); // home, navigation, chat, alerts, profile
   const [navStep, setNavStep] = useState(1);
   const [profile, setProfile] = useState(null);
   const [request, setRequest] = useState(null);
@@ -47,23 +48,21 @@ function App() {
     // data should be { user, token }
     setUser(data.user);
     localStorage.setItem('token', data.token);
-    setActiveTab('navigation');
+    setActiveTab('home');
     loadSavedRoutes();
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('token');
-    setActiveTab('navigation');
+    setActiveTab('home');
     setSavedRoutes([]);
     setProfile(null);
   };
 
   // Navigation Logic
   const handleProfileComplete = (profileData) => {
-    // This is handled in ProfileSetup via API now, but we update local state
-    setProfile(profileData); // Optional: re-fetch from API to be sure
-    // Update user.profile locally for immediate UI update
+    setProfile(profileData);
     setUser(prev => ({ ...prev, profile: profileData }));
     setNavStep(2);
   };
@@ -113,7 +112,10 @@ function App() {
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div 
+          onClick={() => setActiveTab('home')}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+        >
           {/* Logo Icon */}
           <div style={{ width: '32px', height: '32px', background: 'hsl(var(--primary))', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Map size={20} color="white" />
@@ -122,6 +124,23 @@ function App() {
         </div>
 
         <nav style={{ display: 'flex', gap: '32px' }}>
+          <button
+            onClick={() => setActiveTab('home')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: activeTab === 'home' ? 'hsl(var(--primary))' : 'hsl(var(--text-muted))',
+              fontWeight: activeTab === 'home' ? '600' : '400',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.95rem'
+            }}
+          >
+            <Home size={18} /> Home
+          </button>
+          
           <button
             onClick={() => {
               setActiveTab('navigation');
@@ -241,6 +260,9 @@ function App() {
         maxWidth: (activeTab === 'navigation' && navStep === 3) ? '100%' : '1200px',
         margin: '0 auto'
       }}>
+        {activeTab === 'home' && (
+          <HomePage onNavigate={setActiveTab} />
+        )}
 
         {activeTab === 'navigation' && (
           <div className="fade-in">

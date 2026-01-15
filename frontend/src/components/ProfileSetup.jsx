@@ -1,8 +1,6 @@
 import React from "react";
 import { Accessibility, Activity, Zap, Volume2, Eye, Vibrate } from "lucide-react";
-
 import api from '../api';
-
 import MobilityProfileSelector from './MobilityProfileSelector';
 
 const ProfileSetup = ({ onComplete, savedProfile }) => {
@@ -46,7 +44,7 @@ const ProfileSetup = ({ onComplete, savedProfile }) => {
   return (
     <div className="card fade-in">
       <h2 style={{ marginBottom: "20px", color: "hsl(var(--primary))" }}>
-        Step 1: Mobility Profile
+        Mobility Profile
       </h2>
       <p style={{ marginBottom: "24px", color: "hsl(var(--text-muted))" }}>
         Tell us about your needs so we can find the safest route for you.
