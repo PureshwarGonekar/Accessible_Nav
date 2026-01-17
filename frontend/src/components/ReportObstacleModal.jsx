@@ -12,8 +12,22 @@ const ReportObstacleModal = ({ onClose, onReportSubmitted }) => {
     const [duration, setDuration] = useState('1 hour');
     const [affectsWheelchair, setAffectsWheelchair] = useState(false);
     const [photoUrl, setPhotoUrl] = useState('');
+    const [previewUrl, setPreviewUrl] = useState('');
+
+    // Cleanup object URL on unmount or change
+    React.useEffect(() => {
+        return () => {
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
 
     const handleFileUpload = async (file) => {
+        // Immediate local preview
+        const objectUrl = URL.createObjectURL(file);
+        setPreviewUrl(objectUrl);
+
         const formData = new FormData();
         formData.append('image', file);
 
@@ -22,10 +36,14 @@ const ReportObstacleModal = ({ onClose, onReportSubmitted }) => {
             const res = await api.post('/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+            // Assuming backend returns full URL or relative path. 
+            // If relative, we might relies on standard HTML behavior or need formatting.
+            // But for submission, we want the server URL.
             setPhotoUrl(res.data.url);
         } catch (err) {
             console.error("Upload failed", err);
             alert("Failed to upload image.");
+            setPreviewUrl(''); // Clear preview on failure
         } finally {
             setLoading(false);
         }
@@ -266,15 +284,16 @@ const ReportObstacleModal = ({ onClose, onReportSubmitted }) => {
                                 }}
                             />
 
-                            {photoUrl ? (
+                            {previewUrl || photoUrl ? (
                                 <div style={{ position: 'relative' }}>
-                                    <img src={photoUrl} alt="Preview" style={{ maxHeight: '150px', borderRadius: '4px', maxWidth: '100%' }} />
+                                    <img src={previewUrl || photoUrl} alt="Preview" style={{ maxHeight: '150px', borderRadius: '4px', maxWidth: '100%' }} />
                                     <button
                                         type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             setPhotoUrl('');
+                                            setPreviewUrl('');
                                         }}
                                         style={{
                                             position: 'absolute',

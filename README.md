@@ -134,3 +134,43 @@ Use these credentials to log in and test the application immediately:
 *   **Backend:** Node.js, Express, Socket.io (Real-time), Multer (Image Upload).
 *   **Database:** PostgreSQL (with PostGIS concepts implemented via lat/lng logic).
 *   **Auth:** JWT (JSON Web Tokens).
+
+---
+
+## 📸 Project Showcase
+
+### 1. Authentication
+<p align="center">
+  <img src="screenshots/Login.png" width="45%" alt="Login Screen" style="margin-right: 10px; border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/SignUp.png" width="45%" alt="Signup Screen" style="border-radius: 10px; border: 1px solid #333;" />
+</p>
+
+### 2. Dashboard (Dark & Light Mode)
+<p align="center">
+  <img src="screenshots/Home.png" width="45%" alt="Dark Mode Home" style="margin-right: 10px; border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/Home_Light_Mode.png" width="45%" alt="Light Mode Home" style="border-radius: 10px; border: 1px solid #ddd;" />
+</p>
+
+### 3. Accessible Navigation
+<p align="center">
+  <img src="screenshots/Navigation_Mobility_Profile.png" width="32%" alt="Mobility Profile" style="border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/Navigation_map.png" width="32%" alt="Navigation Map" style="border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/Navigation_Route_Light_Mode.png" width="32%" alt="Light Mode Route" style="border-radius: 10px; border: 1px solid #ddd;" />
+</p>
+
+### 4. Real-time Features
+<p align="center">
+  <img src="screenshots/Nearby_Hazards.png" width="48%" alt="Nearby Hazards" style="margin-right: 5px; border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/Obstacles_Alerts.png" width="48%" alt="Obstacle Alerts" style="border-radius: 10px; border: 1px solid #333;" />
+</p>
+
+### 5. Community & AI Support
+<p align="center">
+  <img src="screenshots/Report_Issues.png" width="45%" alt="Report Issue" style="margin-right: 10px; border-radius: 10px; border: 1px solid #333;" />
+  <img src="screenshots/AI_Assistant.png" width="45%" alt="AI Assistant" style="border-radius: 10px; border: 1px solid #333;" />
+</p>
+
+### 6. Personalization
+<p align="center">
+  <img src="screenshots/My_Profile.png" width="60%" alt="User Profile" style="border-radius: 10px; border: 1px solid #333;" />
+</p>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CloudRain, Users, AlertOctagon } from 'lucide-react';
+import { AlertTriangle, CloudRain, Users, AlertOctagon, Loader } from 'lucide-react';
 
 import api from '../api';
 
@@ -95,65 +95,74 @@ const AlertsFeed = () => {
         <p style={{ color: 'hsl(var(--text-muted))' }}>Live updates on city accessibility obstacles.</p>
       </div>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
-        {alerts.map(alert => (
-          <div key={alert.id} className="card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: alert.color.replace(')', ', 0.1)'),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: alert.color,
-              flexShrink: 0
-            }}>
-              <alert.icon size={24} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <strong style={{ fontSize: '1rem' }}>{alert.title}</strong>
-                <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', whiteSpace: 'nowrap', marginLeft: '8px' }}>{alert.time}</span>
+      {loading && (
+        <div className="flex-center" style={{ padding: '60px', flexDirection: 'column', gap: '20px' }}>
+          <Loader className="spin" size={40} color="hsl(var(--primary))" />
+          <p style={{ color: 'hsl(var(--text-muted))' }}>Scanning for local hazards...</p>
+        </div>
+      )}
+
+      {!loading && (
+        <div style={{ display: 'grid', gap: '16px' }}>
+          {alerts.map(alert => (
+            <div key={alert.id} className="card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: alert.color.replace(')', ', 0.1)'),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: alert.color,
+                flexShrink: 0
+              }}>
+                <alert.icon size={24} />
               </div>
-
-              {/* Chips for Category/Type */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
-                  {alert.type.toUpperCase().replace('_', ' ')}
-                </span>
-
-                {/* Location/Distance Chip */}
-                {alert.distance !== null && (
-                  <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: 'hsl(var(--success))', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    📍 {alert.distance < 1000 ? `${alert.distance}m` : `${(alert.distance / 1000).toFixed(1)}km`} away
-                  </span>
-                )}
-
-                {alert.metadata && Object.entries(alert.metadata).map(([k, v]) => (
-                  <span key={k} style={{ fontSize: '0.7rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1px 6px', borderRadius: '4px', color: 'hsl(var(--text-muted))' }}>
-                    {k}: {v.toString()}
-                  </span>
-                ))}
-              </div>
-
-              <div style={{ fontSize: '0.9rem', color: 'hsl(var(--text-muted))', marginBottom: '8px' }}>
-                {alert.message || 'Reported by community'}
-              </div>
-
-              {/* Suggestion Box */}
-              {alert.suggestion && (
-                <div style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.1)', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'hsl(var(--success))', marginBottom: '2px' }}>
-                    💡 Suggestion
-                  </div>
-                  <div style={{ fontSize: '0.85rem' }}>{alert.suggestion}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <strong style={{ fontSize: '1rem' }}>{alert.title}</strong>
+                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', whiteSpace: 'nowrap', marginLeft: '8px' }}>{alert.time}</span>
                 </div>
-              )}
+
+                {/* Chips for Category/Type */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                    {alert.type.toUpperCase().replace('_', ' ')}
+                  </span>
+
+                  {/* Location/Distance Chip */}
+                  {alert.distance !== null && (
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: 'hsl(var(--success))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      📍 {alert.distance < 1000 ? `${alert.distance}m` : `${(alert.distance / 1000).toFixed(1)}km`} away
+                    </span>
+                  )}
+
+                  {alert.metadata && Object.entries(alert.metadata).map(([k, v]) => (
+                    <span key={k} style={{ fontSize: '0.7rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1px 6px', borderRadius: '4px', color: 'hsl(var(--text-muted))' }}>
+                      {k}: {v.toString()}
+                    </span>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: '0.9rem', color: 'hsl(var(--text-muted))', marginBottom: '8px' }}>
+                  {alert.message || 'Reported by community'}
+                </div>
+
+                {/* Suggestion Box */}
+                {alert.suggestion && (
+                  <div style={{ background: 'rgba(0,255,0,0.05)', border: '1px solid rgba(0,255,0,0.1)', padding: '8px', borderRadius: '6px' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'hsl(var(--success))', marginBottom: '2px' }}>
+                      💡 Suggestion
+                    </div>
+                    <div style={{ fontSize: '0.85rem' }}>{alert.suggestion}</div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

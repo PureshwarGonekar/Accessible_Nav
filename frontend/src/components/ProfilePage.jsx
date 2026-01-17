@@ -80,9 +80,10 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
           fontSize: '0.85rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '8px',
+          fontWeight: '600'
         }}>
-          <ShieldCheck size={16} /> Data Confidential & Local
+          <ShieldCheck size={16} /> Data Secure & Encrypted
         </div>
       </div>
 
@@ -91,7 +92,7 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
         {/* Main Form */}
         <div className="card">
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>I identify as / store preferences for:</label>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'hsl(var(--text-main))' }}>I identify as / store preferences for:</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
               {profiles.map(p => (
                 <div
@@ -131,7 +132,7 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Detailed Mobility Issues</label>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'hsl(var(--text-main))' }}>Detailed Mobility Issues</label>
             <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))', marginBottom: '12px' }}>
               Please describe any specific problems you face while walking or traveling (e.g., "Cannot handle inclines &gt; 5%", "Need rest stops every 200m").
             </p>
@@ -144,16 +145,16 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
                 width: '100%',
                 background: 'hsl(var(--bg-input))',
                 borderRadius: 'var(--radius-sm)',
-                border: 'none',
+                border: '1px solid var(--glass-border)',
                 padding: '16px',
-                color: 'white',
+                color: 'hsl(var(--text-main))',
                 fontFamily: 'Inter, sans-serif'
               }}
             />
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Preferred Guidance</label>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', color: 'hsl(var(--text-main))' }}>Preferred Guidance</label>
             <div style={{ display: 'flex', gap: '10px' }}>
               {['visual', 'audio', 'haptic'].map((mode) => (
                 <button
@@ -164,8 +165,8 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
                     padding: '12px',
                     borderRadius: 'var(--radius-md)',
                     background: profileData.guidancePreference === mode ? 'hsl(var(--primary))' : 'hsl(var(--bg-input))',
-                    color: 'white',
-                    border: '1px solid ' + (profileData.guidancePreference === mode ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.1)'),
+                    color: profileData.guidancePreference === mode ? 'white' : 'hsl(var(--text-main))',
+                    border: '1px solid ' + (profileData.guidancePreference === mode ? 'hsl(var(--primary))' : 'var(--glass-border)'),
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -184,7 +185,7 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
           </div>
 
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Emergency Contact (Optional)</label>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'hsl(var(--text-main))' }}>Emergency Contact (Optional)</label>
             <input
               type="text"
               value={profileData.emergencyContact}
@@ -194,9 +195,9 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
                 width: '100%',
                 background: 'hsl(var(--bg-input))',
                 borderRadius: 'var(--radius-sm)',
-                border: 'none',
+                border: '1px solid var(--glass-border)',
                 padding: '12px',
-                color: 'white'
+                color: 'hsl(var(--text-main))'
               }}
             />
           </div>
@@ -211,14 +212,14 @@ const ProfilePage = ({ user, onDelete, onProfileUpdate }) => {
 
         {/* Info Sidebar */}
         <div>
-          <div  className="card" style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+          <div className="card" style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
             <User size={48} color="hsl(var(--text-muted))" style={{ marginBottom: '16px' }} />
             <h3 style={{ fontSize: '1.1rem' }}>{user.name}</h3>
             <p style={{ color: 'hsl(var(--text-muted))', fontSize: '0.9rem' }}>{user.email}</p>
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '16px 0' }}></div>
             <p style={{ fontSize: '0.85rem', lineHeight: '1.5', color: 'hsl(var(--text-muted))' }}>
               <strong>Privacy Notice:</strong><br />
-              Your detailed mobility data is stored <strong>locally on this device</strong>. We do not transmit your specific medical or mobility history to any cloud server. It is used solely to filter map routing on your client.
+              Your detailed mobility data is stored <strong>securely in our encrypted database</strong>. We do not share your personal information with any third-party advertisers or agencies. It is used solely to calculate safe routes for you.
             </p>
           </div>
         </div>

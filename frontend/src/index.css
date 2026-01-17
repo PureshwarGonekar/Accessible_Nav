@@ -13,6 +13,8 @@
   --bg-dark: 230 20% 8%;
   /* Very deep rich blue/black */
   --bg-card: 230 25% 12%;
+  --bg-input: 230 25% 15%;
+  /* Dark mode input bg */
 
   --text-main: 230 20% 98%;
   --text-muted: 230 15% 70%;
@@ -45,6 +47,8 @@
   /* Light gray/white background */
   --bg-card: 0 0% 100%;
   /* White cards */
+  --bg-input: 220 10% 92%;
+  /* Light mode input bg */
 
   --text-main: 230 20% 15%;
   /* Dark text */
@@ -190,6 +194,8 @@ button {
       hsl(var(--primary)));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* Compatibility fix */
 }
 
 .auth-subtitle {
@@ -228,12 +234,12 @@ button {
 
 .input-field {
   width: 100%;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: hsl(var(--bg-input));
+  border: 1px solid var(--glass-border);
   padding: 16px 16px 16px 48px;
   /* space for icon */
   border-radius: var(--radius-lg);
-  color: white;
+  color: hsl(var(--text-main));
   font-size: 1rem;
   font-family: var(--font-body);
   transition: all 0.2s ease;

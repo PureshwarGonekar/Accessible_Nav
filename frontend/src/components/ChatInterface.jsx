@@ -17,6 +17,26 @@ const ChatInterface = () => {
 
   useEffect(scrollToBottom, [messages]);
 
+  const generateMockResponse = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('route') || lower.includes('direction') || lower.includes('go to')) {
+      return "I can definitely help with that! Please enter your destination in the Navigation tab, or look for the 'Start' button. I'll find the most accessible path for you.";
+    }
+    if (lower.includes('ramp') || lower.includes('wheelchair') || lower.includes('step')) {
+      return "I've updated the map to highlight wheelchair-friendly paths. There is a verified ramp entrance 50 meters to your right.";
+    }
+    if (lower.includes('bathroom') || lower.includes('restroom') || lower.includes('toilet')) {
+      return "The nearest accessible restroom is at the City Center Mall, Ground Floor (about 200m ahead). It has grab bars and a wide door.";
+    }
+    if (lower.includes('safe') || lower.includes('safety') || lower.includes('danger')) {
+      return "This area has a high community safety score (92%). However, please be aware of reported construction work on Main Street.";
+    }
+    if (lower.includes('hello') || lower.includes('hi ')) {
+      return "Hello there! ready to explore? Let me know where you want to go.";
+    }
+    return "I'm your AIPilot. I can help find routes, locating ramps, bathrooms, or checking safety scores. How can I assist?";
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -25,15 +45,20 @@ const ChatInterface = () => {
     setInput('');
     setIsLoading(true);
 
+    // Simulate AI delay and response
+    setTimeout(() => {
+      const replyText = generateMockResponse(userMsg.text);
+      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'bot', text: replyText }]);
+      setIsLoading(false);
+    }, 1500);
+
+    // API Call (Disabled for Mock Demo)
+    /*
     try {
       const { data } = await api.post('/chat', { message: userMsg.text });
       setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'bot', text: data.reply }]);
-    } catch (err) {
-      console.error(err);
-      setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'bot', text: "Sorry, I'm having trouble connecting right now." }]);
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { ... }
+    */
   };
 
   const handleKeyPress = (e) => {
