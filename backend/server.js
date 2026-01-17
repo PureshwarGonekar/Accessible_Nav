@@ -58,6 +58,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
-server.listen(PORT, () => { // Listen on server, not app
-  console.log(`Server running on port ${PORT}`);
-});
+// Conditional listen for local development
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel (Serverless)
+module.exports = app;
